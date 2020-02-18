@@ -1,0 +1,67 @@
+name:                simghost
+version:             0.1.0.0
+github:              "Kingdread/simghost"
+license:             BSD3
+author:              "Daniel Schadt"
+maintainer:          "daniel@kingdread.de"
+copyright:           "2020 Daniel Schadt"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/Kingdread/simghost#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- mtl
+- cgi
+- file-embed
+- aeson
+- bytestring
+- unordered-containers
+- text
+- filepath
+- random
+- time
+- bcrypt
+- base64-bytestring
+- directory
+
+library:
+  source-dirs: src
+
+executables:
+  simghost-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - simghost
+
+tests:
+  simghost-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - simghost
+
+ghc-options: -Wall -O2 -static -threaded
+cc-options: -static
+ld-options: -static -pthread
+extra-lib-dirs:
+- /home/daniel/Coding/simghost/.stack-work/lib

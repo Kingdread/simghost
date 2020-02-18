@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <title>Simple Image Host</title>
+    </head>
+    <body>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="imagecontent">
+            <table>
+                <tr><td colspan="2"><input type="file" name="imagefile"></td></tr>
+                <tr><td colspan="2"><div contenteditable="true" id="paster">Paste image</div></td></tr>
+                <tr><td>Duration:</td><td><input type="number" name="duration" value="500"></td></tr>
+                <tr><td>User:</td><td><input type="text" name="username"></td></tr>
+                <tr><td>Password:</td><td><input type="password" name="password"></td></tr>
+                <tr><td></td><td><input type="submit" value="Upload"></td></tr>
+            </table>
+        </form>
+        <script>
+            document.querySelector("#paster").onpaste = function(e) {
+                for (let item of e.clipboardData.items) {
+                    if (item.type.startsWith("image/")) {
+                        console.log(item);
+                        let data = document.querySelector("input[name=imagecontent]");
+                        item.getAsFile().arrayBuffer().then((bytes) => {
+                            data.value = btoa(String.fromCharCode(...new Uint8Array(bytes)));
+                            console.log(bytes);
+                        });
+                    }
+                }
+                e.preventDefault();
+            };
+        </script>
+    </body>
+</html>
