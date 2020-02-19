@@ -63,5 +63,3 @@ tests:
 ghc-options: -Wall -O2 -static -threaded
 cc-options: -static
 ld-options: -static -pthread
-extra-lib-dirs:
-- /home/daniel/Coding/simghost/.stack-work/lib
