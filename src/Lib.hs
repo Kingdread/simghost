@@ -291,12 +291,23 @@ handleUpload = do
 -- Depending on the given parameters, this either dispatches to
 -- 'handleCleanup', 'handleUpload' or just returns the 'indexPage'.
 imgHostMain :: App CGIResult
-imgHostMain = do
-    cleanup <- getInput "cleanup"
-    case cleanup of
-      Just _ -> handleCleanup
-      Nothing -> do
-          method <- requestMethod
-          case method of
-            "POST" -> handleUpload
-            _ -> output indexPage
+imgHostMain = dispatch [ (doCleanup, handleCleanup)
+                       , (doUpload, handleUpload)
+                       , (doDefault, output indexPage)
+                       ]
+    where
+        dispatch :: [(App Bool, App CGIResult)] -> App CGIResult
+        dispatch ((c, a):as) = do
+            take_that <- c
+            if take_that then a
+                         else dispatch as
+        dispatch [] = do
+            setStatus 500 "Internal Server Error"
+            output "No dispatch could be done :("
+
+        doCleanup :: App Bool
+        doCleanup = isJust <$> getInput "cleanup"
+        doUpload :: App Bool
+        doUpload = ("POST" ==) <$> requestMethod
+        doDefault :: App Bool
+        doDefault = return True
