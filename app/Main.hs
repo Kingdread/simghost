@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import ImageHoster
 import Control.Exception
 import Data.Aeson
 import Data.Maybe
@@ -14,6 +14,4 @@ loadSettings = do
 
 
 main :: IO ()
-main = do
-    settings <- loadSettings
-    runApp settings imgHostMain
+main = loadSettings >>= run imgHostMain
