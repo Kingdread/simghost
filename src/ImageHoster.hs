@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 
 {-|
 Description : Simple image hosting
@@ -103,16 +104,15 @@ saveFile content extension duration username = do
 -- | Check the authorization data.
 checkAuthorization :: [(String, String)]
                    -- ^ The (user, password) list.
-                   -> Maybe String
+                   -> String
                    -- ^ The given username.
-                   -> Maybe String
+                   -> String
                    -- ^ The given password.
                    -> Bool
                    -- ^ The authorization result.
-checkAuthorization us (Just user) (Just password) = case lookup user us of
-                                                      Just p -> validatePassword (pack p) (pack password)
-                                                      Nothing -> False
-checkAuthorization _ _ _ = False
+checkAuthorization us user password = case lookup user us of
+                                        Just p -> validatePassword (pack p) (pack password)
+                                        Nothing -> False
 
 
 -- | Get the image data from the current request.
@@ -120,8 +120,8 @@ checkAuthorization _ _ _ = False
 -- This first checks if some raw content is given in the @imagecontent@ field
 -- (i.e. data from a pasted image), and afterwards checks @imagefile@ (i.e. the
 -- file selected in the file chooser).
-getImageData :: App (Maybe BS.ByteString)
-getImageData = do
+getImageData :: FallibleApp BS.ByteString
+getImageData = fallible $ do
     rawData <- getInputFPS "imagecontent"
     case rawData of
       Just d | d /= "" -> return . rightToMaybe $ B64.decode d
@@ -152,29 +152,25 @@ handleCleanup = do
     output "Cleaning up"
 
 
+handleUpload' :: FallibleApp CGIResult
+handleUpload' = do
+    us <- liftApp $ settings' users
+    outdir <- liftApp $ settings' outputDir
+    user <- fallible $ getInput "username"
+    password <- fallible $ getInput "password"
+    guard $ checkAuthorization us user password
+    filecontent <- getImageData
+    filename <- (fallible $ getInputFilename "imagefile") <|> return ""
+    duration :: Integer <- fallible $ readInput "duration"
+    savedFileName <- liftApp $ saveFile filecontent (takeExtension filename) duration user
+    liftApp . redirect $ outdir </> savedFileName
+
+
 -- | Performs a file upload.
 handleUpload :: App CGIResult
-handleUpload = do
-    us <- settings' users
-    outdir <- settings' outputDir
-    user <- getInput "username"
-    password <- getInput "password"
-    let authorized = checkAuthorization us user password
-    if authorized then do
-        filecontent <- getImageData
-        filename <- getInputFilename "imagefile"
-        duration :: Maybe Integer <- readInput "duration"
-        let finfo = (,,) <$> filecontent <*> (filename <|> Just "") <*> duration
-        case finfo of
-          Just (content, name, dur) -> do
-              savedFileName <- saveFile content (takeExtension name) dur (fromJust user)
-              redirect $ outdir </> savedFileName
-          Nothing -> do
-              setStatus 400 "Missing data"
-              output "Invalid request"
-     else do
-         setStatus 401 "Unauthorized"
-         output "Invalid credentials"
+handleUpload = runFallibleApp handleUpload' >>= \case
+    Just r -> return r
+    Nothing -> setStatus 400 "Invalid request" >> output "The upload failed"
 
 -- | Main entry point of the application.
 --

@@ -7,6 +7,7 @@ module ImageHoster.Monad
     , FallibleApp
       -- * Conversion functions
     , runFallibleApp
+    , fallible
     , liftApp
     , run
       -- * Data accessors
@@ -52,6 +53,11 @@ type FallibleApp = MaybeT App
 -- | Run a 'FallibleApp' and return the result wrapped in a 'Maybe'.
 runFallibleApp :: FallibleApp a -> App (Maybe a)
 runFallibleApp = runMaybeT
+
+
+-- | Ensure that a computation that can fail runs as a 'FallibleApp'.
+fallible :: App (Maybe a) -> FallibleApp a
+fallible = MaybeT
 
 
 -- | Lift an 'App' to a 'FallibleApp' that never fails.
