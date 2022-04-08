@@ -11,14 +11,13 @@ module ImageHoster.Data
     , defaultSettings
     ) where
 
+import Control.Arrow ((***))
 import Data.Aeson
 import Data.Aeson.Types
+import Data.Aeson.KeyMap (toList, fromList)
+import Data.Aeson.Key (toString, fromString)
 import Data.Traversable
 import GHC.Generics
-
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Text as T
-
 
 -- | We are dealing with seconds when talking about durations, hence the type
 -- alias.
@@ -65,9 +64,9 @@ instance FromJSON Settings where
 parseUserDict :: Value -> Parser [(String, String)]
 parseUserDict =
     withObject "users" $ \o ->
-        for (HM.toList o) $ \(user, pw) -> do
+        for (toList $ o) $ \(user, pw) -> do
             password <- parseJSON pw
-            return (T.unpack user, password)
+            return (toString user, password)
 
 
 instance ToJSON Settings where
@@ -78,7 +77,7 @@ instance ToJSON Settings where
                                  ]
         where
             formatUsers :: [(String, String)] -> Object
-            formatUsers = HM.fromList . map (\(user, pw) -> (T.pack user, toJSON pw))
+            formatUsers = fromList . map (fromString *** toJSON)
 
 
 -- | Return the default settings.
